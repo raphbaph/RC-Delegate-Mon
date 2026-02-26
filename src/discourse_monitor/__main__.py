@@ -3,15 +3,31 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 
 from .client import DiscourseAPIError, fetch_user_totals
 from .config import ConfigError, load_settings
 from .db import connect, ensure_schema, insert_snapshot_and_diff, query_diffs
 
 
-def _parse_iso_datetime(raw: str) -> datetime:
+def _parse_start_datetime(raw: str) -> datetime:
     value = raw.strip()
+    if "T" not in value:
+        d = datetime.strptime(value, "%Y-%m-%d").date()
+        return datetime.combine(d, time.min, tzinfo=timezone.utc)
+    if value.endswith("Z"):
+        value = value[:-1] + "+00:00"
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _parse_end_datetime(raw: str) -> datetime:
+    value = raw.strip()
+    if "T" not in value:
+        d = datetime.strptime(value, "%Y-%m-%d").date()
+        return datetime.combine(d, time.max, tzinfo=timezone.utc)
     if value.endswith("Z"):
         value = value[:-1] + "+00:00"
     dt = datetime.fromisoformat(value)
@@ -52,8 +68,8 @@ def run_query(start: str, end: str, usernames_raw: str | None) -> int:
     conn = connect(settings.database_path)
     ensure_schema(conn)
 
-    start_iso = _to_iso_z(_parse_iso_datetime(start))
-    end_iso = _to_iso_z(_parse_iso_datetime(end))
+    start_iso = _to_iso_z(_parse_start_datetime(start))
+    end_iso = _to_iso_z(_parse_end_datetime(end))
 
     usernames: list[str] | None = None
     if usernames_raw:
@@ -76,8 +92,16 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("collect", help="Fetch current totals and store diffs.")
 
     query_cmd = sub.add_parser("query", help="Query summed diffs in a timeframe.")
-    query_cmd.add_argument("--start", required=True, help="Inclusive UTC start datetime (ISO 8601).")
-    query_cmd.add_argument("--end", required=True, help="Inclusive UTC end datetime (ISO 8601).")
+    query_cmd.add_argument(
+        "--start",
+        required=True,
+        help="Inclusive UTC start. Accepts YYYY-MM-DD or full ISO datetime.",
+    )
+    query_cmd.add_argument(
+        "--end",
+        required=True,
+        help="Inclusive UTC end. Accepts YYYY-MM-DD or full ISO datetime.",
+    )
     query_cmd.add_argument(
         "--users",
         required=False,

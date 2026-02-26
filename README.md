@@ -43,8 +43,7 @@ DISCOURSE_MONITORED_USERNAMES=user1,user2,user3
 ## Run collector manually
 
 ```bash
-set -a; source .env; set +a
-PYTHONPATH=src python -m discourse_monitor collect
+./run_collect.sh
 ```
 
 Example output:
@@ -57,18 +56,17 @@ bob: total_time=9300s total_likes=190 diff_time=120s diff_likes=1
 ## Query timeframe totals
 
 ```bash
-set -a; source .env; set +a
-PYTHONPATH=src python -m discourse_monitor query \
-  --start 2026-02-01T00:00:00Z \
-  --end 2026-02-26T23:59:59Z
+./run_query.sh \
+  --start 2026-02-01 \
+  --end 2026-02-26
 ```
 
 Optional filter:
 
 ```bash
-PYTHONPATH=src python -m discourse_monitor query \
-  --start 2026-02-01T00:00:00Z \
-  --end 2026-02-26T23:59:59Z \
+./run_query.sh \
+  --start 2026-02-01 \
+  --end 2026-02-26 \
   --users alice,bob
 ```
 
@@ -79,7 +77,7 @@ PYTHONPATH=src python -m discourse_monitor query \
 3. Add cron entry (`crontab -e`):
 
 ```cron
-5 0 * * * cd /path/to/RC-Delegate-Monitor && /bin/zsh -lc 'source .venv/bin/activate && set -a; source .env; set +a; PYTHONPATH=src python -m discourse_monitor collect >> logs/collect.log 2>&1'
+0 0 * * * cd /path/to/RC-Delegate-Monitor && ./run_collect.sh >> logs/collect.log 2>&1
 ```
 
 Create `logs/` first:

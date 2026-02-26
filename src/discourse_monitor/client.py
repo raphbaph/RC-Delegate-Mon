@@ -66,15 +66,18 @@ def _fetch_payload(
     timeout_seconds: int,
 ) -> dict[str, Any]:
     url = f"{settings.discourse_base_url}{endpoint_path}"
-    response = requests.get(
-        url,
-        headers={
-            "Api-Key": settings.discourse_api_key,
-            "Api-Username": settings.discourse_api_username,
-            "Accept": "application/json",
-        },
-        timeout=timeout_seconds,
-    )
+    try:
+        response = requests.get(
+            url,
+            headers={
+                "Api-Key": settings.discourse_api_key,
+                "Api-Username": settings.discourse_api_username,
+                "Accept": "application/json",
+            },
+            timeout=timeout_seconds,
+        )
+    except requests.RequestException as exc:
+        raise DiscourseAPIError(f"Request failed for endpoint {endpoint_path}: {exc}") from exc
 
     if response.status_code >= 400:
         raise DiscourseAPIError(
