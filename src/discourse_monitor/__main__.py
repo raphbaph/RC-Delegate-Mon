@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+import csv
 import sys
 from datetime import datetime, time, timezone
 
@@ -76,8 +76,28 @@ def run_query(start: str, end: str, usernames_raw: str | None) -> int:
         usernames = [u.strip() for u in usernames_raw.split(",") if u.strip()]
 
     rows = query_diffs(conn, start_iso_utc=start_iso, end_iso_utc=end_iso, usernames=usernames)
-    result = [dict(r) for r in rows]
-    print(json.dumps(result, indent=2))
+    writer = csv.writer(sys.stdout)
+    writer.writerow(
+        [
+            "username",
+            "time_read_seconds",
+            "likes_received",
+            "first_capture",
+            "last_capture",
+            "points",
+        ]
+    )
+    for row in rows:
+        writer.writerow(
+            [
+                row["username"],
+                row["time_read_seconds"],
+                row["likes_received"],
+                row["first_capture"],
+                row["last_capture"],
+                row["points"],
+            ]
+        )
     conn.close()
     return 0
 

@@ -9,7 +9,7 @@ This uses the regular Discourse API with your admin API key, so no Builder plan 
 - `collect`: fetches current totals for each monitored user and writes:
   - a raw cumulative snapshot
   - a diff row versus the previous snapshot
-- `query`: sums stored diffs between two UTC datetimes, per user
+- `query`: sums stored diffs between two UTC datetimes, per user, and prints CSV
 
 ## Project structure
 
@@ -59,6 +59,14 @@ bob: total_time=9300s total_likes=190 diff_time=120s diff_likes=1
 ./run_query.sh \
   --start 2026-02-01 \
   --end 2026-02-26
+```
+
+Example output:
+
+```csv
+username,time_read_seconds,likes_received,first_capture,last_capture,points
+alice,310,3,2026-02-25T00:00:10Z,2026-02-26T00:00:11Z,2
+bob,120,1,2026-02-25T00:00:12Z,2026-02-26T00:00:13Z,2
 ```
 
 Optional filter:
