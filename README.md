@@ -10,6 +10,7 @@ This uses the regular Discourse API with your admin API key, so no Builder plan 
   - a raw cumulative snapshot
   - a diff row versus the previous snapshot
 - `query`: sums stored diffs between two UTC datetimes, per user, and prints CSV
+- `export`: dumps raw table rows to CSV for import or backup
 
 ## Project structure
 
@@ -76,6 +77,20 @@ Optional filter:
   --start 2026-02-01 \
   --end 2026-02-26 \
   --users alice,bob
+```
+
+## Export raw rows
+
+Exports one database table row-by-row as CSV. Default table is `metric_diffs`.
+
+```bash
+./run_export.sh > metric_diffs.csv
+```
+
+To export snapshots instead:
+
+```bash
+./run_export.sh --table snapshots > snapshots.csv
 ```
 
 ## Cron on VPS (daily at 00:05 UTC)

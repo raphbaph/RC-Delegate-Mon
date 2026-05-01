@@ -198,3 +198,13 @@ def query_diffs(
         params = [start_iso_utc, end_iso_utc]
 
     return conn.execute(sql, params).fetchall()
+
+
+def export_table_rows(conn: sqlite3.Connection, table_name: str) -> tuple[list[str], list[sqlite3.Row]]:
+    allowed_tables = {"metric_diffs", "snapshots"}
+    if table_name not in allowed_tables:
+        raise ValueError(f"Unsupported table: {table_name}")
+
+    rows = conn.execute(f"SELECT * FROM {table_name} ORDER BY id").fetchall()
+    columns = [column[1] for column in conn.execute(f"PRAGMA table_info({table_name})").fetchall()]
+    return columns, rows

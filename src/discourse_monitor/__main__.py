@@ -7,7 +7,7 @@ from datetime import datetime, time, timezone
 
 from .client import DiscourseAPIError, fetch_user_totals
 from .config import ConfigError, load_settings
-from .db import connect, ensure_schema, insert_snapshot_and_diff, query_diffs
+from .db import connect, ensure_schema, export_table_rows, insert_snapshot_and_diff, query_diffs
 
 
 def _parse_start_datetime(raw: str) -> datetime:
@@ -102,10 +102,25 @@ def run_query(start: str, end: str, usernames_raw: str | None) -> int:
     return 0
 
 
+def run_export(table: str) -> int:
+    settings = load_settings()
+    conn = connect(settings.database_path)
+    ensure_schema(conn)
+
+    columns, rows = export_table_rows(conn, table)
+    writer = csv.writer(sys.stdout)
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([row[column] for column in columns])
+
+    conn.close()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="discourse-monitor",
-        description="Collect and query Discourse user metric diffs.",
+        description="Collect, query, and export Discourse user metric data.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -128,6 +143,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional comma-separated usernames. Defaults to all tracked users in DB.",
     )
 
+    export_cmd = sub.add_parser("export", help="Export raw table rows as CSV.")
+    export_cmd.add_argument(
+        "--table",
+        choices=["metric_diffs", "snapshots"],
+        default="metric_diffs",
+        help="Table to export. Defaults to metric_diffs.",
+    )
+
     return parser
 
 
@@ -140,6 +163,8 @@ def main() -> int:
             return run_collect()
         if args.command == "query":
             return run_query(args.start, args.end, args.users)
+        if args.command == "export":
+            return run_export(args.table)
         parser.print_help()
         return 2
     except ConfigError as exc:
